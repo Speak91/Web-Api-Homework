@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,9 +12,16 @@ namespace MetricsAgent.Controllers
     [ApiController]
     public class HddMetricsAgentController : ControllerBase
     {
+        private readonly ILogger<HddMetricsAgentController> _logger;
+        public HddMetricsAgentController(ILogger<HddMetricsAgentController> logger)
+        {
+            _logger = logger;
+            _logger.LogDebug(1, "NLog встроен в HddMetricsAgentController");
+        }
         [HttpGet("left")]
         public IActionResult GetFreeHDDSpace()
         {
+            _logger.LogInformation($"Список свободного места передан");
             return Ok();
         }
     }
