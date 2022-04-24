@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using MetricsAgent.DAL;
+using MetricsAgent.Responses;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -13,17 +15,29 @@ namespace MetricsAgent.Controllers
     public class NetworkMetricsAgentController : ControllerBase
     {
         private readonly ILogger<NetworkMetricsAgentController> _logger;
-        public NetworkMetricsAgentController(ILogger<NetworkMetricsAgentController> logger)
+        private INetworkMetricsRepository _repository;
+        public NetworkMetricsAgentController(ILogger<NetworkMetricsAgentController> logger, INetworkMetricsRepository repository)
         {
             _logger = logger;
             _logger.LogDebug(1, "NLog встроен в NetworkMetricsAgentController");
+            _repository = repository;
         }
 
         [HttpGet("from/{fromTime}/to/{toTime}")]
-        public IActionResult GetMetrics([FromRoute] TimeSpan fromTime, [FromRoute] TimeSpan toTime)
+        public IActionResult GetMetrics([FromRoute] DateTime fromTime, [FromRoute] DateTime toTime)
         {
-            _logger.LogInformation($"Метрика сети c {fromTime} по {toTime} передана");
-            return Ok();
+           IList<NetworkMetric> metrics = _repository.GetByTimePeriod(fromTime, toTime);
+          
+            if (metrics is null)
+            {
+                _logger.LogInformation("По запросу ничего не было найдено.");
+                return NotFound();
+            }
+            else
+            {
+                _logger.LogInformation($"Метрики сети с {fromTime} по {toTime} переданы");
+                return Ok(metrics);
+            }
         }
     }
 }

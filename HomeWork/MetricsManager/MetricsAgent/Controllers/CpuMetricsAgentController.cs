@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using MetricsAgent.DAL;
+using MetricsAgent.Requests;
+using MetricsAgent.Responses;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Data.SQLite;
+using System.Diagnostics;
 
 namespace MetricsAgent.Controllers
 {
@@ -13,27 +15,38 @@ namespace MetricsAgent.Controllers
     public class CpuMetricsAgentController : ControllerBase
     {
         private readonly ILogger<CpuMetricsAgentController> _logger;
-        public CpuMetricsAgentController(ILogger<CpuMetricsAgentController> logger)
+        private ICpuMetricsRepository _repository;
+
+        public CpuMetricsAgentController(ILogger<CpuMetricsAgentController> logger, ICpuMetricsRepository repository)
         {
             _logger = logger;
             _logger.LogDebug(1, "NLog встроен в CpuMetricsAgentController");
+            _repository = repository;
         }
-
-        [HttpGet("from/{fromTime}/to/{toTime}/percentiles/{percentile}")]
-        public IActionResult GetMetrics(
-        [FromRoute] TimeSpan fromTime, 
-        [FromRoute] TimeSpan toTime, 
-        [FromRoute] Percentile percentile)
+      
+        [HttpPost("create")]
+        public IActionResult Create(CpuMetricCreateRequest request)
         {
-            _logger.LogInformation($"Метрика c {fromTime} по {toTime} со следующими данными {percentile} передана");
+            _repository.Create(new CpuMetric {Time = request.Time, Value = request.Value});
             return Ok();
         }
 
         [HttpGet("from/{fromTime}/to/{toTime}")]
-        public IActionResult GetMetrics( [FromRoute] TimeSpan fromTime, [FromRoute] TimeSpan toTime)
+        public IActionResult GetByTimePeriod([FromRoute] DateTime fromTime, [FromRoute] DateTime toTime)
         {
-            _logger.LogInformation($"Метрика c {fromTime} по {toTime} передана");
-            return Ok();
+            IList<CpuMetric> metrics = _repository.GetByTimePeriod(fromTime, toTime);
+
+            if (metrics is null )
+            {
+                _logger.LogInformation("По запросу ничего не было найдено.");
+                return NotFound();
+            }
+            else
+            {
+                _logger.LogInformation($"Метрики с {fromTime} по {toTime}");
+                return Ok(metrics);
+            }    
         }
+
     }
 }

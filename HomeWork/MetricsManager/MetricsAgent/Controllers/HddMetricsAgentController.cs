@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using MetricsAgent.DAL;
+using MetricsAgent.Responses;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -13,16 +15,28 @@ namespace MetricsAgent.Controllers
     public class HddMetricsAgentController : ControllerBase
     {
         private readonly ILogger<HddMetricsAgentController> _logger;
-        public HddMetricsAgentController(ILogger<HddMetricsAgentController> logger)
+        private IHddMetricsRepository _repository;
+        public HddMetricsAgentController(ILogger<HddMetricsAgentController> logger, IHddMetricsRepository repository)
         {
             _logger = logger;
+            _repository = repository;
             _logger.LogDebug(1, "NLog встроен в HddMetricsAgentController");
         }
-        [HttpGet("left")]
-        public IActionResult GetFreeHDDSpace()
+
+        [HttpGet("left/from/{fromTime}/to/{toTime}")]
+        public IActionResult GetFreeHDDSpace([FromRoute] DateTime fromTime, [FromRoute] DateTime toTime)
         {
-            _logger.LogInformation($"Список свободного места передан");
-            return Ok();
+            IList<HddMetric> metrics = _repository.GetByTimePeriod(fromTime, toTime);
+            if (metrics is null)
+            {
+                _logger.LogInformation("По запросу ничего не было найдено.");
+                return NotFound();
+            }
+            else
+            {
+                _logger.LogInformation($"Метрики свободного места с {fromTime} по {toTime} переданы");
+                return Ok(metrics);
+            }
         }
     }
 }

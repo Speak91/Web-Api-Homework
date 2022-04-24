@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using MetricsAgent.DAL;
+using MetricsAgent.Responses;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -13,17 +15,28 @@ namespace MetricsAgent.Controllers
     public class RamMetricsAgentController : ControllerBase
     {
         private readonly ILogger<RamMetricsAgentController> _logger;
-        public RamMetricsAgentController(ILogger<RamMetricsAgentController> logger)
+        private IRamMetricsRepository _repository;
+        public RamMetricsAgentController(ILogger<RamMetricsAgentController> logger, IRamMetricsRepository repository)
         {
             _logger = logger;
             _logger.LogDebug(1, "NLog встроен в RamMetricsAgentController");
+            _repository = repository;
         }
 
         [HttpGet("available")]
-        public IActionResult GetAvailable()
+        public IActionResult GetAvailable([FromRoute] DateTime fromTime, [FromRoute] DateTime toTime)
         {
-            _logger.LogInformation($"Метрика от агента передана");
-            return Ok();
+            IList<RamMetric> metrics = _repository.GetByTimePeriod(fromTime, toTime);
+            if (metrics is null)
+            {
+                _logger.LogInformation("По запросу ничего не было найдено.");
+                return NotFound();
+            }
+            else
+            {
+                _logger.LogInformation($"Метрики оперативной памяти с {fromTime} по {toTime} переданы");
+                return Ok(metrics);
+            }
         }
     }
 }
