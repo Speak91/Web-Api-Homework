@@ -1,4 +1,5 @@
-﻿using MetricsAgent.DAL;
+﻿using AutoMapper;
+using MetricsAgent.DAL;
 using MetricsAgent.Responses;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -16,27 +17,32 @@ namespace MetricsAgent.Controllers
     {
         private readonly ILogger<RamMetricsAgentController> _logger;
         private IRamMetricsRepository _repository;
-        public RamMetricsAgentController(ILogger<RamMetricsAgentController> logger, IRamMetricsRepository repository)
+        private readonly IMapper _mapper;
+
+        public RamMetricsAgentController(ILogger<RamMetricsAgentController> logger, IRamMetricsRepository repository, IMapper mapper)
         {
             _logger = logger;
             _logger.LogDebug(1, "NLog встроен в RamMetricsAgentController");
             _repository = repository;
+            _mapper = mapper;
         }
 
         [HttpGet("available")]
         public IActionResult GetAvailable([FromRoute] DateTime fromTime, [FromRoute] DateTime toTime)
         {
             IList<RamMetric> metrics = _repository.GetByTimePeriod(fromTime, toTime);
-            if (metrics is null)
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<RamMetric, RamMetricDto>());
+            var mapper = config.CreateMapper();
+            var response = new AllRamMetricsResponse()
             {
-                _logger.LogInformation("По запросу ничего не было найдено.");
-                return NotFound();
-            }
-            else
+                Metrics = new List<RamMetricDto>()
+            };
+            foreach (var metric in metrics)
             {
-                _logger.LogInformation($"Метрики оперативной памяти с {fromTime} по {toTime} переданы");
-                return Ok(metrics);
+                // Добавляем объекты в ответ, используя маппер
+                response.Metrics.Add(mapper.Map<RamMetricDto>(metric));
             }
+            return Ok(response);
         }
     }
 }

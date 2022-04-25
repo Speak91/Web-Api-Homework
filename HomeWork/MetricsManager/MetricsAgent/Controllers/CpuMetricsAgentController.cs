@@ -1,4 +1,5 @@
-﻿using MetricsAgent.DAL;
+﻿using AutoMapper;
+using MetricsAgent.DAL;
 using MetricsAgent.Requests;
 using MetricsAgent.Responses;
 using Microsoft.AspNetCore.Mvc;
@@ -16,12 +17,13 @@ namespace MetricsAgent.Controllers
     {
         private readonly ILogger<CpuMetricsAgentController> _logger;
         private ICpuMetricsRepository _repository;
-
-        public CpuMetricsAgentController(ILogger<CpuMetricsAgentController> logger, ICpuMetricsRepository repository)
+        private readonly IMapper _mapper;
+        public CpuMetricsAgentController(ILogger<CpuMetricsAgentController> logger, ICpuMetricsRepository repository, IMapper mapper)
         {
             _logger = logger;
             _logger.LogDebug(1, "NLog встроен в CpuMetricsAgentController");
             _repository = repository;
+            _mapper = mapper;
         }
       
         [HttpPost("create")]
@@ -35,17 +37,18 @@ namespace MetricsAgent.Controllers
         public IActionResult GetByTimePeriod([FromRoute] DateTime fromTime, [FromRoute] DateTime toTime)
         {
             IList<CpuMetric> metrics = _repository.GetByTimePeriod(fromTime, toTime);
-
-            if (metrics is null )
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<CpuMetric, CpuMetricDto>());
+            var mapper = config.CreateMapper();
+            var response = new AllCpuMetricsResponse()
             {
-                _logger.LogInformation("По запросу ничего не было найдено.");
-                return NotFound();
+                Metrics = new List<CpuMetricDto>()
+            };
+            foreach (var metric in metrics)
+            {
+                // Добавляем объекты в ответ, используя маппер
+                response.Metrics.Add(mapper.Map<CpuMetricDto>(metric));
             }
-            else
-            {
-                _logger.LogInformation($"Метрики с {fromTime} по {toTime}");
-                return Ok(metrics);
-            }    
+            return Ok(response);
         }
 
     }
