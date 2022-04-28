@@ -15,7 +15,18 @@ namespace MetricsAgent.DAL
         }
         public void Create(DotNetMetric item)
         {
-            throw new NotImplementedException();
+            using (var connection = new SQLiteConnection(ConnectionString))
+            {
+                var result = connection.Execute(
+                $"INSERT INTO dotnetmetrics(Time,Value) VALUES (@Time,@Value);",
+                    new
+                    {
+                        Time = item.Time,
+                        Value = item.Value,
+                    }
+                );
+                if (result <= 0) throw new InvalidOperationException("Не удалось добавить метрику.");
+            }
         }
 
         public IList<DotNetMetric> GetByTimePeriod(DateTime fromTime, DateTime toTime)
