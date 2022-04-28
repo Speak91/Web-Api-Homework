@@ -16,7 +16,18 @@ namespace MetricsAgent.DAL
 
         public void Create(RamMetric item)
         {
-            throw new NotImplementedException();
+            using (var connection = new SQLiteConnection(ConnectionString))
+            {
+                var result = connection.Execute(
+                $"INSERT INTO rammetrics(Time,Value) VALUES (@Time,@Value);",
+                    new
+                    {
+                        Time = item.Time,
+                        Value = item.Value,
+                    }
+                );
+                if (result <= 0) throw new InvalidOperationException("Не удалось добавить метрику.");
+            }
         }
 
         public IList<RamMetric> GetByTimePeriod(DateTime fromTime, DateTime toTime)

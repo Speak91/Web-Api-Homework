@@ -17,7 +17,18 @@ namespace MetricsAgent.DAL
 
         public void Create(HddMetric item)
         {
-            throw new NotImplementedException();
+            using (var connection = new SQLiteConnection(ConnectionString))
+            {
+                var result = connection.Execute(
+                $"INSERT INTO hddmetrics(Time,Value) VALUES (@Time,@Value);",
+                    new
+                    {
+                        Time = item.Time,
+                        Value = item.Value,
+                    }
+                );
+                if (result <= 0) throw new InvalidOperationException("Не удалось добавить метрику.");
+            }
         }
 
         public IList<HddMetric> GetByTimePeriod(DateTime fromTime, DateTime toTime)
