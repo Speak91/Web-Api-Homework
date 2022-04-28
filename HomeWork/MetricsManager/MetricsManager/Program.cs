@@ -16,31 +16,30 @@ namespace MetricsManager
                 logger.Debug("init main");
                 CreateHostBuilder(args).Build().Run();
             }
-
+            // отлов всех исключений в рамках работы приложени€
             catch (Exception exception)
             {
-                //NLog: устанавливаем отлов исключений
                 logger.Error(exception, "Stopped program because of exception");
                 throw;
             }
-
             finally
             {
-                // ќстановка логгера
                 NLog.LogManager.Shutdown();
             }
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args).ConfigureWebHostDefaults(webBuilder =>
+        Host.CreateDefaultBuilder(args)
+            .ConfigureWebHostDefaults(webBuilder =>
             {
                 webBuilder.UseStartup<Startup>();
             })
             .ConfigureLogging(logging =>
             {
-                logging.ClearProviders(); // —оздание провайдеров логировани€
-                logging.SetMinimumLevel(LogLevel.Trace); // ”станавливаем минимальный уровень логировани€
-            }).UseNLog(); // ƒобавл€ем библиотеку nlog
+                logging.ClearProviders(); // создание провайдеров логировани€
+                logging.SetMinimumLevel(LogLevel.Trace); // устанавливаем минимальный уровень логировани€
+            })
+            .UseNLog(); // добавл€ем библиотеку nlog
     }
 
 }

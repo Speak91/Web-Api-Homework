@@ -1,10 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using MetricsManager.DAL.Interfaces;
+using AutoMapper;
 
 namespace MetricsManager.Controllers
 {
@@ -12,23 +11,29 @@ namespace MetricsManager.Controllers
     [ApiController]
     public class RamMetricsController : ControllerBase
     {
+        private readonly IRamMetricsRepository _repository;
         private readonly ILogger<RamMetricsController> _logger;
-        public RamMetricsController(ILogger<RamMetricsController> logger)
+        private readonly IMapper _mapper;
+
+        public RamMetricsController(IRamMetricsRepository repository, ILogger<RamMetricsController> logger, IMapper mapper)
         {
+            _repository = repository;
             _logger = logger;
-            _logger.LogDebug(1, "NLog встроен в RamMetricsController");
+            _logger.LogDebug(1, "NLog встроен в CpuMetricsController");
+            _mapper = mapper;
         }
 
         [HttpGet("available/agent/{agentId}")]
         public IActionResult GetAvailableFromAgent([FromRoute] int agentId)
         {
-            _logger.LogInformation($"Список свободного места от агента {agentId} передан");
+            _logger.LogInformation("Получение RAM у {agentId}",
+                agentId);
             return Ok();
         }
         [HttpGet("available/cluster")]
         public IActionResult GetAvailableFromAllCluster()
         {
-            _logger.LogInformation($"Метрика от кластера агентов передана");
+            _logger.LogInformation("Получение RAM");
             return Ok();
         }
     }
